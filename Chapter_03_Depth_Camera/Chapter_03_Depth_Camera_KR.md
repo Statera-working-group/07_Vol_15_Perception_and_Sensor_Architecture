@@ -1,0 +1,229 @@
+**Volume 15 Perception and Sensor Architecture**
+
+# Chapter 03. Depth Camera
+
+## 03.01. ToF Sensor Architecture
+
+![](images/image1.png){width="7.268055555555556in" height="7.268055555555556in"}
+
+비행시간(Time-of-Flight, ToF) 센싱은 방출된 빛의 전파 특성을 측정하여 거리를 추정하는 능동형 깊이 측정(Active Depth Measurement) 아키텍처이다. 두 카메라 사이의 기하학적 시차(Geometric Disparity)를 이용하여 깊이를 추정하는 수동형 스테레오 비전(Passive Stereo Vision)과 달리, ToF 시스템은 주변 환경에 빛을 능동적으로 조사하고 되돌아오는 광학 신호(Optical Signal)를 관측한다. 이를 통해 여러 픽셀의 깊이를 동시에 직접 측정할 수 있으며, 일반적인 시각적 텍스처(Visual Texture)가 부족한 환경에서도 로봇 인지(Robotic Perception)에 효과적으로 활용할 수 있다.
+
+일반적인 ToF 센서 아키텍처(ToF Sensor Architecture)는 조명 서브시스템(Illumination Subsystem), 광학 송신기(Optical Transmitter), 장면 상호작용 경로(Scene Interaction Path), 수광 광학계(Receiving Optics), 감광 픽셀 배열(Photosensitive Pixel Array), 타이밍 또는 위상 측정 회로(Timing or Phase-Measurement Circuitry), 아날로그 프런트엔드(Analog Front End), 디지털 처리 로직(Digital Processing Logic), 통신 인터페이스(Communication Interface)로 구성된다. 이러한 요소들은 긴밀하게 연계된 하나의 측정 체인(Measurement Chain)으로 동작한다.
+
+조명 서브시스템(Illumination Subsystem)은 일반적으로 레이저 다이오드(Laser Diode) 또는 수직공진 표면발광 레이저(Vertical-Cavity Surface-Emitting Laser, VCSEL)가 생성하는 근적외선(Near-Infrared, NIR)을 사용한다. 방출된 광 에너지(Optical Energy)는 전용 조명 광학계(Illumination Optics)를 통해 필요한 시야각(Field of View)에 분산된다. 깊이 정확도는 반사되어 돌아오는 에너지를 안정적으로 검출하는 능력에 좌우되므로 송신 출력, 펄스 형태, 변조 파형(Modulation Waveform), 빔 균일성, 광학 효율 및 눈 안전성(Eye Safety)을 통합적으로 고려해야 한다.
+
+ToF 아키텍처에는 크게 두 가지 측정 원리가 사용된다. 직접 비행시간(Direct ToF, dToF)은 광 펄스를 송신한 시점과 반사광을 검출한 시점 사이의 경과 시간을 측정하여 전파 시간과 거리를 직접 연결한다. 간접 비행시간(Indirect ToF, iToF)은 주기적으로 변조된 빛을 방출하고 송신 신호와 수신 신호 사이의 위상 관계(Phase Relationship)를 이용하여 거리를 추정한다. 특히 간접 방식은 위상 감응 픽셀(Phase-Sensitive Pixel)을 이용해 2차원 센서 배열 전체에서 병렬적으로 깊이를 측정하는 데 적합하다.
+
+간접 ToF 픽셀(Indirect ToF Pixel)에서는 되돌아온 광학 신호를 조명 변조 신호에 대해 제어된 여러 위상 위치에서 샘플링한다. 서로 다른 측정 구간에 축적된 전하(Charge)는 수신광과 기준 파형(Reference Waveform)의 상관관계를 나타낸다. 처리 회로는 이러한 측정값을 이용해 위상차(Phase Shift), 진폭(Amplitude), 신뢰도(Confidence), 최종 거리(Distance)를 계산한다. 따라서 픽셀 배열은 단순한 영상 장치인 동시에 타이밍 특성이 깊이 정확도를 결정하는 분산형 측정 시스템(Distributed Measurement System)으로 동작한다.
+
+전기 아키텍처(Electrical Architecture)는 조명 드라이버(Illumination Driver)와 센서 타이밍 회로(Sensor Timing Circuitry) 사이의 정밀한 동기화(Synchronization)를 유지해야 한다. 거리 추정값이 전파 지연 또는 위상에 의해 결정되기 때문에 작은 타이밍 편차도 체계적인 거리 오차(Systematic Range Error)로 나타날 수 있다. 따라서 타이밍 생성기(Timing Generator)는 변조, 노출, 픽셀 샘플링, 프레임 시퀀싱 및 판독(Readout)을 조정하며, 클록 품질, 지터(Jitter), 전파 지연, PCB 배선, 전원 무결성(Power Integrity), 온도에 따른 타이밍 변화가 중요한 설계 요소가 된다.
+
+되돌아오는 광 에너지는 송신된 에너지 가운데 일부만 수신기로 반사되므로 일반적으로 송신 신호보다 매우 약하다. 수광 광학계(Receiving Optics)는 이러한 빛을 수집하여 ToF 픽셀 배열에 투영하고, 픽셀 배열은 광학 신호를 전기적 전하로 변환한다. 렌즈 조리개(Lens Aperture), 시야각(Field of View), 광 투과율, 센서 양자효율(Quantum Efficiency), 대상체 반사율(Target Reflectivity), 거리 및 조명 출력이 함께 신호대잡음비(Signal-to-Noise Ratio, SNR)를 결정하며, 결과적으로 실질적인 측정 가능 거리를 좌우한다.
+
+주변광(Ambient Illumination)은 수신기가 검출한 모든 광자가 ToF 송신기에서 발생했다고 가정할 수 없기 때문에 중요한 문제를 발생시킨다. 태양광, 인공조명, 주변 반사 및 다른 능동형 적외선 장치가 불필요한 광 에너지를 추가할 수 있다. 변조 및 상관 기법(Modulation and Correlation Techniques)은 원하는 신호를 구분하는 데 도움을 주며, 광학 대역통과 필터(Optical Band-Pass Filter)는 송신 파장 이외의 빛을 억제한다. 그러나 강한 적외선 주변광은 측정 신뢰도를 낮추고 사용 가능한 거리를 감소시키거나 수신기를 포화시킬 수 있다.
+
+깊이 계산(Depth Computation)은 일반적으로 위상 또는 지연값을 단순히 거리로 변환하는 것 이상의 처리 과정을 포함한다. 원시 측정값에는 오프셋 오차(Offset Error), 위상 비선형성(Phase Nonlinearity), 온도 드리프트(Temperature Drift), 다중경로 간섭(Multipath Interference), 저진폭 영역, 포화 픽셀 및 경계 아티팩트(Edge Artifact)가 포함될 수 있다. 따라서 처리 파이프라인은 교정 보상(Calibration Compensation), 진폭 평가, 신뢰도 추정, 무효 픽셀 검출, 필터링 및 깊이 변환을 포함할 수 있으며 일부 기능은 센서 또는 전용 ASIC 내부에서 수행된다.
+
+다중경로 간섭(Multipath Interference)은 방출된 빛이 하나의 직접 경로가 아니라 여러 반사 경로를 거쳐 동일한 픽셀에 도달할 때 발생한다. 벽 모서리, 광택 바닥, 주변 구조물 또는 반사성이 높은 물체는 서로 다른 지연을 가진 광학 성분을 생성할 수 있다. 수신기는 이러한 성분들을 함께 측정하므로 계산된 위상은 실제 표면까지의 거리 대신 여러 전파 거리의 혼합값을 나타낼 수 있다. 따라서 ToF 깊이는 완벽한 기하학적 관측값이 아니라 장면의 광학 및 기하학적 특성에 영향을 받는 측정값으로 해석해야 한다.
+
+모호성 없는 측정 거리(Unambiguous Measurement Range)는 변조 아키텍처(Modulation Architecture)와 밀접하게 관련된다. 위상 기반 ToF에서는 주기적인 변조 때문에 위상이 한 주기를 넘어 반복되면서 서로 다른 실제 거리가 동일한 측정 위상으로 나타날 수 있다. 따라서 변조 주파수(Modulation Frequency)는 깊이 민감도와 최대 비모호 측정 거리를 함께 결정한다. 다중 주파수 기법(Multi-Frequency Technique)은 서로 다른 변조 주파수의 측정값을 결합해 거리 모호성을 해소하면서 높은 정밀도를 유지할 수 있지만 타이밍, 처리, 교정 및 전력 관리의 복잡성이 증가한다.
+
+전원 아키텍처(Power Architecture)는 조명 서브시스템이 상당한 순간 전류(Transient Current)를 요구할 수 있기 때문에 특히 중요하다. 레이저 또는 VCSEL 드라이버, ToF 센서, 타이밍 회로, 처리 ASIC, 메모리 및 인터페이스 전자회로는 서로 다른 전압 레일(Voltage Rail)과 잡음 민감도를 가질 수 있다. 로컬 레귤레이터(Local Regulator)와 디커플링 네트워크(Decoupling Network)는 조명 스위칭 전류가 민감한 아날로그 및 타이밍 회로에 영향을 주지 않도록 설계되어야 한다. 따라서 PCB 영역 분리와 귀환 전류(Return Current) 제어는 깊이 품질과 직접 연결된다.
+
+열 거동(Thermal Behavior) 역시 송신기 효율, 광 출력, 센서 특성, 타이밍 동작 및 교정 파라미터가 온도에 따라 변할 수 있기 때문에 전체 아키텍처에 영향을 미친다. 연속적인 깊이 측정은 조명기, 드라이버, 센서, 프로세서 및 전력 변환 회로에서 열을 발생시킬 수 있다. 온도 감지 및 보상(Temperature Sensing and Compensation)을 교정 파이프라인에 통합할 수 있으며, 기구 및 PCB 설계에서는 적절한 열 전달 경로(Thermal Path)를 확보해야 한다. 안정적인 깊이 성능을 위해 전기, 광학, 기계 및 열 설계를 하나의 시스템으로 다루어야 한다.
+
+호스트 인터페이스(Host Interface)는 깊이 프레임(Depth Frame)뿐 아니라 적외선 강도, 진폭, 신뢰도, 타임스탬프(Timestamp), 교정 데이터 및 센서 상태 정보를 전달한다. 구현 방식에 따라 센서 내부에는 고속 직렬 링크(High-Speed Serial Link)가 사용될 수 있으며, 완성된 깊이 카메라 모듈은 일반적으로 USB, 이더넷(Ethernet) 또는 다른 시스템 수준 연결을 제공한다. 로봇 플랫폼에서는 단순한 데이터 전송 대역폭뿐 아니라 IMU, LiDAR, RGB 카메라, 오도메트리(Odometry), 제어 데이터와의 정확한 시간 연계가 중요하다.
+
+ToF 카메라는 스테레오 대응점(Stereo Correspondence)을 찾기 위한 풍부한 표면 텍스처가 없어도 조밀한 계량 깊이(Dense Metric Depth)를 생성할 수 있으므로 단거리 및 중거리 로봇 인지에 특히 유용하다. 장애물 검출, 사람 검출, 도킹(Docking), 조작(Manipulation), 내비게이션(Navigation), 자유공간 추정(Free-Space Estimation), 물체 크기 측정 및 근거리 안전 기능 등에 활용할 수 있다. 다만 반사성, 투명성, 저반사율 또는 복잡한 형상의 표면에서는 측정 성능이 저하될 수 있으므로 실제 시스템에서는 이러한 실패 모드(Failure Mode)를 사전에 평가해야 한다.
+
+이동 로봇(Mobile Robot)에서 ToF 서브시스템은 독립적인 깊이 센서가 아니라 전체 인지 및 센서 아키텍처(Perception and Sensor Architecture)의 일부로 다루어야 한다. 제공된 구성에서는 ToF가 깊이 카메라(Depth Camera) 장의 구조광(Structured Light), 능동형 스테레오(Active Stereo), 단거리·장거리 절충(Short-Range/Long-Range Tradeoff), 깊이 카메라 전력 예산(Depth Camera Power Budget)과 함께 배치되며, 이후 LiDAR, 레이더(Radar), IMU, GNSS, 센서 융합(Sensor Fusion), 시간 동기화(Time Synchronization)로 확장된다. 이는 ToF를 다중 센서 인지 시스템의 상호보완적 센싱 방식으로 평가해야 함을 의미한다.
+
+결과적으로 견고한 ToF 아키텍처는 조명(Illumination), 광학계(Optics), 센싱 픽셀(Sensing Pixel), 타이밍 전자회로(Timing Electronics), 아날로그 신호 획득(Analog Signal Acquisition), 디지털 깊이 처리(Digital Depth Processing), 교정(Calibration), 전원 공급(Power Delivery), 열 제어(Thermal Control), 동기화(Synchronization), 통신(Communication)을 통합적으로 설계함으로써 완성된다. 깊이 정확도는 단일 부품의 성능만으로 결정되지 않으며 전체 측정 체인의 각 단계가 불확실성과 오차에 영향을 준다. 로보틱스(Robotics)와 피지컬 AI(Physical AI) 플랫폼에서 성공적인 ToF 통합의 핵심은 이러한 전기·광학 측정 체인을 안정적이고 시간 동기화되며 교정된 깊이 정보로 변환하여 상위 인지 및 의사결정 시스템이 신뢰할 수 있도록 만드는 것이다.
+
+## 03.02. Structured Light System
+
+![](images/image2.png){width="7.268055555555556in" height="7.268055555555556in"}
+
+구조광(Structured Light)은 알려진 광학 패턴(Optical Pattern)을 장면에 투사하고 하나 이상의 카메라로 이를 관측하여 깊이를 측정하는 능동형 깊이 센싱(Active Depth Sensing) 기술이다. 투사된 패턴이 물체 표면과 상호작용한 후 발생하는 기하학적 변형이나 위치 변화를 분석하여 깊이를 추정한다. 깊이 카메라(Depth Camera) 아키텍처에서 구조광은 비행시간(Time-of-Flight, ToF) 및 능동형 스테레오(Active Stereo)와 함께 제어된 조명을 이용해 깊이 정보를 생성하는 대표적인 방식이다.
+
+일반적인 구조광 시스템(Structured-Light System)은 조명 광원(Illumination Source), 패턴 생성 요소(Pattern-Generation Element), 투사 광학계(Projection Optics), 수신 카메라(Receiving Camera), 이미징 광학계(Imaging Optics), 동기화 회로(Synchronization Circuitry), 처리 장치(Processing Unit), 전원 서브시스템(Power Subsystem), 호스트 인터페이스(Host Interface)로 구성된다. 프로젝터(Projector)가 미리 정의된 공간 패턴을 환경에 투사하면 카메라는 그 결과를 관측하고 기준 기하 구조와의 차이를 분석하여 깊이값으로 변환한다.
+
+조명 광원(Illumination Source)은 일반적으로 근적외선(Near-Infrared, NIR) 영역에서 동작하므로 투사된 패턴을 사람의 눈에는 거의 보이지 않게 유지하면서 이미지 센서가 효율적으로 검출할 수 있다. 레이저 다이오드(Laser Diode) 또는 기타 적외선 방출기(Infrared Emitter)가 프로젝터에 필요한 광 에너지를 공급할 수 있다. 선택된 파장은 카메라 감도, 광학 필터, 주변 조명, 요구 동작 거리, 프로젝터 효율 및 광학 안전(Optical Safety) 요구사항과 함께 고려해야 한다.
+
+패턴 생성(Pattern Generation)은 구조광 센싱의 핵심 요소이다. 투사 영역에는 점(Dot), 선(Line), 격자(Grid), 줄무늬(Stripe), 부호화 구조(Coded Structure) 또는 투사 전에 기하학적 특성을 알고 있는 다양한 공간 패턴을 사용할 수 있다. 이러한 패턴이 3차원 표면에 투사되면 표면의 거리와 방향에 따라 관측되는 형태가 달라진다. 카메라는 이 변화를 기록하고 처리 시스템은 프로젝터 좌표, 카메라 좌표 및 장면의 관측 지점 사이의 기하학적 관계를 계산한다.
+
+프로젝터와 카메라는 원리적으로 스테레오 비전 시스템(Stereo Vision System)과 유사한 교정된 기하학적 쌍(Calibrated Geometric Pair)을 형성한다. 두 카메라에서 자연적으로 존재하는 시각 특징만을 이용해 대응점을 찾는 대신 구조광은 제어된 패턴을 투사하여 인공적인 특징을 생성한다. 따라서 프로젝터는 개념적으로 역방향 카메라(Inverse Camera)로 볼 수 있으며, 알려진 프로젝터 광선과 카메라 관측 광선 사이의 삼각측량(Triangulation)을 통해 3차원 위치를 계산할 수 있다.
+
+베이스라인 기하구조(Baseline Geometry)는 측정 성능에 큰 영향을 준다. 프로젝터와 수신 카메라 사이의 물리적 거리가 삼각측량 베이스라인을 형성하며, 초점거리(Focal Length), 시야각(Field of View), 센서 해상도 및 동작 거리에 따라 패턴 위치 변화와 깊이 사이의 관계가 결정된다. 긴 베이스라인은 깊이 민감도를 향상시킬 수 있지만 가림(Occlusion)과 패키징 문제를 증가시킬 수 있다. 반대로 짧은 베이스라인은 소형 모듈 구현에는 유리하지만 측정 거리가 증가할수록 삼각측량 정확도가 감소할 수 있다.
+
+대응점 추정(Correspondence Estimation)은 관측된 패턴 요소가 투사된 어떤 요소에 대응하는지를 처리 시스템이 판단해야 하므로 매우 중요하다. 부호화 패턴(Coded Pattern)은 프로젝터의 서로 다른 영역에 식별 가능한 공간적 특성을 부여하여 이러한 대응 관계를 쉽게 결정할 수 있도록 한다. 대응점이 설정되면 교정된 프로젝터와 카메라 파라미터를 사용해 3차원 좌표를 복원한다. 잘못된 대응은 큰 깊이 오차를 발생시킬 수 있으므로 신뢰도 평가(Confidence Evaluation)와 모호한 측정값 제거가 중요하다.
+
+교정(Calibration)은 정확한 3차원 복원에 필요한 내부 및 외부 기하 관계를 설정한다. 카메라 초점 파라미터, 렌즈 왜곡(Lens Distortion), 프로젝터 기하구조, 상대 회전(Relative Rotation), 상대 이동(Relative Translation), 베이스라인 등을 충분한 정밀도로 규정해야 한다. 제조 공차 또는 기계적 변위는 교정 후에도 이러한 관계를 변화시킬 수 있다. 따라서 견고한 기계적 장착과 안정적인 광학 정렬(Optical Alignment)은 단순한 패키징 문제가 아니라 센서 아키텍처의 핵심 요소이다.
+
+수신 카메라(Receiving Camera)는 일반적으로 투사 파장에 최적화된 이미지 센서, 적절한 이미징 광학계, 광학 대역통과 필터(Optical Band-Pass Filter)를 포함한다. 필터는 불필요한 파장을 억제하여 주변광에 비해 구조광 패턴의 가시성을 높인다. 센서 노출(Exposure)과 이득(Gain) 역시 세심하게 제어해야 한다. 신호가 너무 약하면 패턴 검출이 불안정해지고, 지나치게 강하면 픽셀이 포화되어 대응점 및 깊이 복원에 필요한 정보가 손실될 수 있다.
+
+주변광(Ambient Light)은 구조광의 성능에 상당한 영향을 미칠 수 있다. 강한 태양광에는 많은 적외선 에너지가 포함되어 있어 투사된 패턴과 배경 조명 사이의 대비를 감소시킨다. 따라서 적외선 구조광 시스템은 밝은 실외보다 실내 환경에서 유리한 경우가 많다. 프로젝터 출력을 높이면 패턴 가시성을 개선할 수 있지만 전력 소비, 발열, 눈 안전(Eye Safety), 광원 수명 및 가까운 표면의 포화 가능성에 의해 제한된다.
+
+표면 특성(Surface Characteristics)도 측정 신뢰도에 영향을 준다. 어두운 재료는 투사된 에너지의 상당 부분을 흡수할 수 있으며, 반사율이 높은 표면은 강한 하이라이트나 간접 반사를 발생시킬 수 있다. 투명 또는 반투명 재료는 패턴을 굴절, 투과 또는 산란시켜 잘못된 대응점을 만들 수 있다. 미세한 경계와 깊이 불연속 영역에서는 패턴이 혼합되거나 부분적으로 가려질 수 있으므로 깊이 신뢰도는 모든 복원 픽셀을 동일하게 취급하지 않고 실제 광학 측정 품질을 반영해야 한다.
+
+가림(Occlusion)은 프로젝터-카메라 시스템에서 발생하는 대표적인 기하학적 한계이다. 어떤 표면은 카메라에서는 보이지만 프로젝터에서는 가려질 수 있으며, 반대로 투사광을 받더라도 카메라에서는 관측되지 않을 수 있다. 이러한 영역에서는 유효한 구조광 대응점을 얻을 수 없다. 프로젝터와 카메라 사이의 베이스라인을 늘리면 삼각측량 민감도가 향상될 수 있지만 가림도 증가하므로 정확도, 측정 범위, 모듈 크기 및 동작 거리 사이의 중요한 절충(Tradeoff)이 필요하다.
+
+깊이 처리 파이프라인(Depth-Processing Pipeline)은 일반적으로 획득된 패턴 영상에서 시작하여 전처리(Preprocessing), 패턴 검출(Pattern Detection), 대응점 추정, 기하학적 복원(Geometric Reconstruction), 교정 보상(Calibration Compensation), 유효성 검사(Validity Testing), 필터링(Filtering)의 순서로 진행된다. 최종적으로 조밀하거나 반조밀한 깊이 맵(Depth Map)과 강도 또는 신뢰도 정보가 생성된다. 요구 프레임률, 해상도, 지연시간, 전력 소비 및 시스템 통합 조건에 따라 전용 프로세서, ASIC, 임베디드 CPU, GPU 또는 엣지 AI 프로세서(Edge AI Processor)가 이러한 처리를 담당할 수 있다.
+
+투사와 영상 획득 사이의 전기적 동기화(Electrical Synchronization)는 프로젝터가 간헐적으로 동작하거나 여러 패턴 상태를 사용하는 경우 특히 중요하다. 트리거 신호(Trigger Signal)를 이용해 패턴 방출, 카메라 노출, 프레임 획득 및 처리 구간을 조정할 수 있다. 타이밍 오류가 발생하면 카메라가 불완전하거나 잘못된 패턴 상태를 촬영할 수 있다. 따라서 안정적인 클록, 결정론적 트리거링(Deterministic Triggering), 적절한 노출 타이밍 및 정확한 타임스탬프(Timestamp)가 측정 품질과 다중 센서 통합에 직접적으로 기여한다.
+
+전원 설계(Power Design)는 프로젝터, 카메라 센서, 프로세서, 메모리 및 통신 회로의 서로 다른 전기적 특성을 고려해야 한다. 적외선 프로젝터는 비교적 크고 빠르게 변화하는 전류를 요구할 수 있는 반면 이미지 센서와 아날로그 회로는 전원 잡음에 민감할 수 있다. 독립적인 전압 조정(Voltage Regulation), 로컬 디커플링(Local Decoupling), 제어된 접지(Grounding), 신중한 PCB 귀환 전류(Return Current) 설계를 통해 조명 스위칭이 영상 품질이나 타이밍 안정성을 저하시키는 것을 방지해야 한다.
+
+열 관리(Thermal Management)는 광학적·기하학적 안정성과 밀접하게 연결된다. 프로젝터 출력, 광원 파장, 이미지 센서 잡음, 프로세서 동작 및 기계적 정렬은 온도에 따라 변화할 수 있다. 조명 광원과 처리 전자장치에서 발생한 열은 소형 카메라 모듈 내부에 온도 구배(Temperature Gradient)를 형성할 수도 있다. 따라서 연속 동작 중 일관된 깊이 성능을 유지하려면 열 전달 경로(Thermal Path), 온도 모니터링, 보상 파라미터 및 기계적으로 안정적인 재료를 고려해야 한다.
+
+호스트 시스템(Host System)은 깊이 영상과 함께 적외선 영상, 신뢰도 값, 교정 파라미터, 타임스탬프 및 진단 정보(Diagnostic Information)를 수신할 수 있다. USB, 이더넷(Ethernet) 또는 기타 고속 인터페이스를 이용해 임베디드 컴퓨터나 로봇 인지 프로세서로 데이터를 전달할 수 있다. 구조광 깊이 정보를 RGB 카메라, IMU, LiDAR, 오도메트리(Odometry) 또는 다른 센서와 융합하는 경우 공간적·시간적 일관성을 유지하기 위해 정확한 타임스탬프와 센서 좌표 변환(Sensor Coordinate Transformation)이 필요하다.
+
+로보틱스(Robotics)에서 구조광 카메라는 특히 실내 내비게이션(Indoor Navigation), 조작(Manipulation), 물체 측정(Object Measurement), 도킹(Docking), 인간 상호작용(Human Interaction), 검사(Inspection), 근거리 장애물 인지(Near-Field Obstacle Perception)에 유용하다. 인공적으로 생성된 텍스처를 이용하기 때문에 수동형 스테레오 대응점 검출이 어려운 표면에서도 유용한 기하 정보를 얻을 수 있다. 그러나 깊이 해상도만 고려해서는 안 되며 동작 거리, 주변광 민감도, 표면 특성, 가림, 프로젝터 전력 및 열적 제약을 실제 로봇 운용 환경과 함께 평가해야 한다.
+
+더 넓은 인지 아키텍처(Perception Architecture)에서 구조광은 비행시간 센싱(ToF Sensing), 능동형 스테레오(Active Stereo), 단거리·장거리 요구조건(Short-Range versus Long-Range Requirements), 전체 깊이 카메라 전력 예산(Depth-Camera Power Budget)과 함께 평가해야 한다. 제공된 구성에서도 이러한 기술들은 동일한 깊이 카메라(Depth Camera) 장에 배치되고 이후 LiDAR, 레이더(Radar), IMU, GNSS, 센서 융합(Sensor Fusion), 시간 동기화(Time Synchronization)로 확장된다. 이는 모든 로봇 운용 조건에 최적인 단일 깊이 센싱 기술은 존재하지 않는다는 점을 강조한다.
+
+결과적으로 견고한 구조광 시스템(Structured-Light System)은 광학(Optical), 기하학(Geometric), 전기(Electrical), 연산(Computational), 열(Thermal), 기계(Mechanical) 설계를 통합적으로 조정함으로써 구현된다. 투사 패턴의 품질만으로 정확한 깊이를 보장할 수 없으며 프로젝터-카메라 교정, 동기화, 신호 대비, 대응점 신뢰도, 전원 무결성(Power Integrity), 열 안정성 및 환경적 강건성(Environmental Robustness)이 최종 측정값에 영향을 준다. 로보틱스와 피지컬 AI(Physical AI) 시스템에서 핵심 목표는 제어된 광학 투사를 신뢰할 수 있고 교정되며 시간 동기화된 3차원 정보로 변환하여 인지(Perception), 계획(Planning), 자율 상호작용(Autonomous Interaction)에 활용하는 것이다.
+
+## 03.03. Active Stereo Design
+
+![](images/image3.png){width="7.268055555555556in" height="7.268055555555556in"}
+
+능동형 스테레오(Active Stereo)는 기존의 스테레오 비전(Stereo Vision)에 제어된 조명(Controlled Illumination)을 결합하여 두 카메라 사이의 대응점(Correspondence) 검출 성능을 향상시키는 능동형 깊이 센싱(Active Depth Sensing) 아키텍처이다. 좌측 및 우측 카메라는 서로 다른 시점에서 동일한 장면을 관측하고, 적외선 프로젝터(Infrared Projector)는 시각적 특징이 부족한 표면에 인공적인 텍스처(Artificial Texture)를 생성한다. 깊이는 광학적 전파 시간을 직접 측정하는 것이 아니라 양안 시차(Binocular Disparity)를 이용해 추정되므로 비행시간(Time-of-Flight, ToF) 방식과 구별된다.
+
+기본 아키텍처는 알려진 베이스라인(Baseline)을 두고 배치된 두 개의 동기화된 이미지 센서(Image Sensor), 서로 대응하는 이미징 광학계(Imaging Optics), 능동형 적외선 조명 광원(Active Infrared Illumination Source), 투사 광학계(Projection Optics), 타이밍 및 동기화 회로(Timing and Synchronization Circuitry), 영상 처리 하드웨어(Image-Processing Hardware), 전압 조정 회로(Power Regulation), 호스트 통신 인터페이스(Host Communication Interface)로 구성된다. 두 카메라는 삼각측량(Triangulation)에 필요한 기하학적 관측 정보를 제공하고, 프로젝터는 스테레오 대응점 계산에 사용되는 영상 특징의 가용성과 신뢰성을 향상시킨다.
+
+능동 조명(Active Illumination)은 일반적으로 근적외선(Near-Infrared, NIR)을 사용하여 가시광 기반의 정상적인 영상 동작을 크게 방해하지 않으면서 인공 텍스처를 생성한다. 적외선 레이저(Infrared Laser), 수직공진 표면발광 레이저(VCSEL) 또는 LED 광원을 이용해 랜덤 도트(Random Dot), 의사 랜덤(Pseudo-Random), 스페클(Speckle) 또는 기타 텍스처 패턴을 장면에 투사할 수 있다. 미리 정의된 패턴의 기하학을 명시적으로 해독하는 구조광(Structured Light)과 달리, 능동형 스테레오는 주로 투사된 텍스처를 이용해 좌우 카메라 영상 사이의 스테레오 정합(Stereo Matching)을 강화한다.
+
+스테레오 베이스라인(Stereo Baseline)은 가장 중요한 물리적 설계 파라미터 중 하나이다. 이는 좌측과 우측 카메라의 광학 중심(Optical Center) 사이 거리를 의미하며 물체의 깊이가 영상 시차(Image Disparity)로 얼마나 크게 나타나는지를 결정한다. 긴 베이스라인은 일반적으로 장거리에서 깊이 민감도를 높이지만 센서 모듈의 크기를 증가시키고 시점 차이, 가림(Occlusion), 대응점 탐색 난이도를 증가시킨다. 짧은 베이스라인은 소형 패키징과 근거리 시야 중첩에 유리하지만 거리가 증가할수록 깊이 해상도가 감소한다.
+
+깊이는 초점거리(Focal Length), 베이스라인 및 측정된 시차 사이의 관계를 이용하여 계산한다. 정류된 스테레오 영상(Rectified Stereo Pair)에서는 동일한 장면의 대응점이 주로 수평 영상 방향을 따라 이동한다. 큰 시차는 일반적으로 가까운 물체를 의미하고 작은 시차는 먼 물체를 의미한다. 거리가 증가할수록 작은 시차 오차에도 깊이값이 크게 영향을 받으므로 센서 해상도, 초점거리, 베이스라인 정확도, 교정 품질(Calibration Quality), 정합 정밀도가 실제 깊이 성능을 종합적으로 결정한다.
+
+스테레오 교정(Stereo Calibration)은 기하학적 복원(Geometric Reconstruction)에 필요한 내부 및 외부 파라미터를 설정한다. 내부 파라미터(Intrinsic Parameters)는 각 카메라의 초점거리, 주점(Principal Point), 렌즈 왜곡(Lens Distortion)을 나타내고, 외부 파라미터(Extrinsic Parameters)는 두 카메라 사이의 상대 회전(Relative Rotation)과 상대 이동(Relative Translation)을 나타낸다. 교정 데이터는 두 영상을 정류(Rectification)하여 대응점들이 예측 가능한 에피폴라 선(Epipolar Line)을 따라 위치하도록 만들며, 이를 통해 스테레오 대응 알고리즘의 탐색 영역을 크게 줄일 수 있다.
+
+따라서 기계적 안정성(Mechanical Stability)은 능동형 스테레오의 정확도와 분리할 수 없는 요소이다. 교정된 베이스라인을 기준으로 어느 한 카메라라도 위치가 변하면 외부 기하 관계가 달라져 체계적인 깊이 오차(Systematic Depth Error)가 발생한다. 카메라 캐리어(Camera Carrier), PCB, 하우징(Housing), 렌즈 마운트(Lens Mount), 기계적 인터페이스는 진동, 충격, 조립 편차 및 온도 변화에서도 정렬 상태를 유지해야 한다. 지속적으로 움직이는 로봇 시스템에서는 초기 실험실 교정 정확도만큼 교정 유지성(Calibration Retention)이 중요하다.
+
+하드웨어 동기화(Hardware Synchronization)는 좌측과 우측 카메라가 실질적으로 동일한 순간의 장면을 관측하도록 한다. 이는 로봇, 사람, 차량, 매니퓰레이터(Manipulator) 또는 기타 물체가 움직이는 환경에서 특히 중요하다. 노출 시점이 동기화되지 않으면 물체의 실제 움직임 때문에 두 영상에서 위치 차이가 발생하고 이것이 시점 차이에 의한 시차로 잘못 해석될 수 있다. 공통 트리거(Shared Trigger), 동기화 클록(Synchronized Clock), 제어된 노출 타이밍 및 정확한 타임스탬프(Timestamp)는 이러한 시간적 시차(Temporal Disparity)를 줄이고 대응점 신뢰성을 향상시킨다.
+
+능동형 프로젝터(Active Projector) 역시 카메라 노출과 조정되어야 한다. 조명은 광 출력, 열적 제약, 간섭 요구사항 및 시스템 아키텍처에 따라 연속적으로 동작하거나 특정 노출 구간에 맞추어 동기화될 수 있다. 동기화된 투사(Synchronized Projection)는 에너지 효율을 높이고 불필요한 조명을 줄일 수 있지만 프로젝터 활성화와 영상 획득 사이에 결정론적인 타이밍(Deterministic Timing)이 필요하다. 잘못된 타이밍은 투사된 텍스처를 약화시키거나 일관되지 않은 스테레오 프레임을 생성할 수 있다.
+
+영상 처리 파이프라인(Image-Processing Pipeline)은 동기화된 좌측 및 우측 영상에서 시작하며 일반적으로 센서 및 렌즈 영향 보정, 스테레오 정류(Stereo Rectification), 특징 또는 비용 계산(Cost Computation), 대응점 탐색, 시차 추정(Disparity Estimation), 일관성 검사(Consistency Checking), 필터링(Filtering), 깊이 변환(Depth Conversion)을 포함한다. 최신 구현에서는 블록 정합(Block Matching), 세미 글로벌 기법(Semi-Global Technique), 신경망 기반 스테레오 모델(Neural Stereo Model) 또는 하이브리드 방식(Hybrid Approach)을 사용할 수 있다. 생성된 시차 맵(Disparity Map)은 교정된 카메라 기하학을 이용하여 실제 거리 단위의 깊이로 변환된다.
+
+모든 영상 영역에서 신뢰할 수 있는 스테레오 정합이 가능한 것은 아니므로 신뢰도 추정(Confidence Estimation)이 중요하다. 반복되는 텍스처는 대응점의 모호성을 발생시킬 수 있으며, 가려진 영역은 한쪽 카메라에서만 관측될 수 있다. 반사성, 투명성, 어두운 표면 또는 신호가 약한 표면 역시 정합 품질을 떨어뜨릴 수 있다. 능동 조명은 텍스처가 부족한 영역의 성능을 개선하지만 이러한 스테레오 방식의 근본적인 한계를 완전히 제거하지는 못한다. 따라서 로봇 인지 시스템에서 깊이 정보를 사용하기 전에 무효하거나 신뢰도가 낮은 측정값을 식별해야 한다.
+
+가림(Occlusion)은 두 카메라 사이의 공간적 분리로 인해 자연스럽게 발생한다. 장면의 특정 영역이 좌측 카메라에서는 보이지만 우측 카메라에서는 가려질 수 있으며, 이 경우 유효한 양안 대응점(Binocular Correspondence)을 계산할 수 없다. 베이스라인을 증가시키면 기하학적 깊이 민감도는 향상되지만 동시에 가림 차이도 증가할 수 있다. 따라서 능동형 스테레오 설계에서는 베이스라인, 동작 거리, 시야각 중첩(Field-of-View Overlap), 모듈 크기, 깊이 정밀도 및 로봇 운용 환경의 예상 기하구조 사이에서 적절한 균형을 찾아야 한다.
+
+주변 조명(Ambient Illumination)은 주로 투사된 적외선 텍스처의 가시성을 변화시켜 능동형 스테레오 성능에 영향을 준다. 강한 태양광은 능동 패턴을 압도하여 시스템이 점차 수동형 스테레오(Passive Stereo)처럼 동작하도록 만들 수 있다. 광학 대역통과 필터(Optical Band-Pass Filter), 적절한 광원 파장, 노출 제어, 센서 감도 및 프로젝터 출력을 통해 강건성을 높일 수 있다. 그러나 일반적으로 실내 또는 조명이 제어된 환경에서는 강한 실외 환경보다 능동 조명의 효과를 더욱 안정적으로 활용할 수 있다.
+
+여러 능동형 깊이 센서(Active Depth Sensor)의 적외선 패턴이 서로 겹치면 상호 간섭(Interference)이 발생할 수 있다. 카메라가 다른 로봇이나 센서에서 생성된 텍스처를 관측하고 이를 자신의 조명 패턴 일부로 잘못 처리할 가능성이 있다. 시간 변조(Temporal Modulation), 프로젝터 스케줄링(Projector Scheduling), 파장 분리(Wavelength Separation), 노출 조정 또는 알고리즘 기반 제거 기법을 통해 이러한 간섭을 감소시킬 수 있다. 여러 AMR이나 다수의 능동형 스테레오 장치가 존재하는 로봇 작업셀(Robotic Workcell)에서는 특히 중요한 문제이다.
+
+전기 아키텍처(Electrical Architecture)는 조명 서브시스템의 비교적 동적인 전류 요구가 민감한 카메라 및 타이밍 회로에 영향을 미치지 않도록 설계해야 한다. 전용 전압 조정(Dedicated Voltage Regulation), 로컬 디커플링(Local Decoupling), 제어된 접지(Controlled Grounding), 적절한 PCB 귀환 전류 경로(Return-Current Path)를 적용하면 영상 품질과 동기화 안정성을 유지하는 데 도움이 된다. 따라서 프로젝터, 카메라, 처리 장치, 메모리 및 통신 인터페이스를 서로 독립적인 부품이 아니라 상호작용하는 전기적 부하(Electrical Load)로 고려해야 한다.
+
+열 설계(Thermal Design)는 광학 성능과 기하학적 교정 모두에 영향을 준다. 프로젝터, 이미지 센서, 처리 하드웨어 및 전압 조정 회로에서 발생하는 열은 센서 잡음, 광원 출력, 렌즈 특성 및 기계적 치수를 변화시킬 수 있다. 특히 스테레오 베이스라인 전체에서 발생하는 차등 열팽창(Differential Thermal Expansion)은 두 카메라의 상대 정렬을 변화시킬 수 있다. 온도 모니터링, 보상, 열적으로 안정된 기계 재료, 제어된 열 전달 경로 및 적절한 동작 한계를 통해 연속적인 로봇 운용에서도 깊이 정확도를 유지해야 한다.
+
+처리 플랫폼(Processing Platform)은 해상도, 프레임률(Frame Rate), 스테레오 알고리즘 복잡도, 전력 소비 및 지연시간 요구조건에 따라 임베디드 CPU, GPU, FPGA, 전용 비전 ASIC 또는 엣지 AI 프로세서(Edge AI Processor)를 사용할 수 있다. 스테레오 대응점 계산은 넓은 영상 영역에서 다수의 후보 정합을 평가해야 하므로 상당한 연산량을 요구할 수 있다. 실시간 내비게이션이나 조작을 위해 높은 프레임률의 조밀한 깊이(Dense Depth)가 필요한 경우 하드웨어 가속(Hardware Acceleration)이 특히 중요하다.
+
+호스트 인터페이스(Host Interface)는 정류된 영상(Rectified Image), 시차 맵, 실제 거리 단위의 깊이, 적외선 강도, 신뢰도 정보, 교정 파라미터, 타임스탬프 및 진단 상태(Diagnostic Status)를 제공할 수 있다. USB, 이더넷(Ethernet) 또는 기타 고속 인터페이스를 이용해 능동형 스테레오 모듈과 로봇의 주 연산 플랫폼을 연결할 수 있다. 정확한 좌표 변환(Coordinate Transformation)과 타임스탬프를 사용하면 깊이 데이터를 RGB 카메라, IMU, LiDAR, 휠 오도메트리(Wheel Odometry) 및 다른 센서와 센서 융합(Sensor Fusion) 아키텍처에서 결합할 수 있다.
+
+로보틱스(Robotics)에서 능동형 스테레오는 실내 내비게이션(Indoor Navigation), 장애물 검출(Obstacle Detection), 조작(Manipulation), 도킹(Docking), 물체 복원(Object Reconstruction), 인간 상호작용(Human Interaction), 근거리 환경 인지(Near-Field Environmental Perception)에 적합하다. 스테레오 비전의 기하학적 기반과 인공 텍스처를 결합하므로 시각적으로 균일한 표면에서도 성능을 향상시킬 수 있다. 그러나 실제 효과는 베이스라인 선택, 교정 안정성, 동기화, 투사 패턴 가시성, 표면 특성, 주변 조명, 처리 성능 및 요구 동작 거리에 의해 결정된다.
+
+제공된 인지 아키텍처(Perception Architecture)에서 능동형 스테레오 설계(Active Stereo Design)는 깊이 카메라(Depth Camera) 장에서 ToF 센서 아키텍처(ToF Sensor Architecture)와 구조광 시스템(Structured Light System) 다음에 배치되며, 이후 단거리·장거리 절충(Short Range Long Range Tradeoff)과 깊이 카메라 전력 예산(Depth Camera Power Budget)으로 이어진다. 이러한 구성은 능동형 스테레오를 특정 로봇 플랫폼에 적합한 센싱 아키텍처를 선정하기 전에 시스템 수준에서 비교해야 하는 세 가지 주요 능동형 깊이 측정 방식 중 하나로 위치시킨다.
+
+결과적으로 견고한 능동형 스테레오 설계(Active Stereo Design)를 위해서는 광학(Optical), 기계(Mechanical), 전기(Electrical), 타이밍(Timing), 연산(Computational), 교정(Calibration) 엔지니어링을 통합적으로 조정해야 한다. 프로젝터는 유효한 인공 텍스처를 제공해야 하고, 스테레오 카메라 쌍은 교정된 기하 관계를 유지해야 하며, 노출은 정확하게 동기화되어야 한다. 또한 처리 파이프라인은 신뢰할 수 있는 대응점과 모호한 측정값을 구분해야 한다. 로보틱스와 피지컬 AI(Physical AI) 시스템의 최종 목표는 실시간 위치추정(Localization), 계획(Planning), 조작 및 자율 상호작용(Autonomous Interaction)을 지원할 수 있는 안정적이고 교정되며 시간 동기화된 3차원 인지 정보를 생성하는 것이다.
+
+## 03.04. Short Range/Long Range Tradeoff
+
+![](images/image4.png){width="7.268055555555556in" height="7.268055555555556in"}
+
+단거리(Short-Range)와 장거리(Long-Range) 깊이 센싱은 로봇 인지 아키텍처(Robotic Perception Architecture)에서 근본적으로 서로 다른 최적화 목표를 가진다. 근거리 물체에 최적화된 센서는 최소 측정 거리(Minimum Measurable Distance), 넓은 시야각(Field of View), 정밀한 공간 세부정보 및 낮은 지연 응답(Low-Latency Response)을 우선해야 한다. 반면 장거리 센서는 거리가 증가해도 깊이 정확도(Depth Accuracy)를 유지해야 한다. 따라서 깊이 카메라(Depth Camera) 시스템은 측정 거리, 정밀도, 해상도, 광 출력, 베이스라인 기하구조(Baseline Geometry), 연산량 및 환경 강건성(Environmental Robustness) 사이의 균형을 고려하여 설계해야 한다.
+
+요구되는 센싱 거리(Sensing Range)는 개별 센서의 최대 사양이 아니라 로봇의 실제 운용 동작(Operational Behavior)을 기준으로 결정해야 한다. 조작(Manipulation), 도킹(Docking), 인간 상호작용(Human Interaction), 근거리 장애물 회피(Near-Field Obstacle Avoidance)는 수십 센티미터에서 수 미터 범위의 안정적인 깊이 측정을 요구할 수 있다. 더 빠르게 이동하는 로봇은 장애물에 도달하기 전에 검출, 위치추정(Localization), 계획(Planning), 제동(Braking), 제어(Control)를 완료할 수 있도록 더 먼 거리를 인지해야 한다.
+
+단거리 센싱은 비교적 넓은 각도 영역에서 조밀한 측정(Dense Measurement)을 제공하는 기하학적 구조와 광학 구성을 통해 이점을 얻는다. 큰 영상 시차(Image Disparity), 강한 반사 조명 신호, 근거리 물체에 대한 높은 픽셀 점유율은 상세한 표면 정보를 제공할 수 있다. 그러나 지나치게 가까운 물체는 카메라와 프로젝터 사이의 광학적 중첩 영역(Optical Overlap)을 벗어나거나 교정된 깊이 영역 밖에 위치할 수 있으며, 초점이 흐려지거나 능동 조명(Active Illumination)이 포화되어 실제 최소 동작 거리(Minimum Operating Distance)를 제한할 수 있다.
+
+장거리 센싱에서는 일반적으로 거리가 증가함에 따라 깊이 불확실성(Depth Uncertainty)이 증가하므로 다른 형태의 제약이 발생한다. 스테레오 기반 시스템에서는 물체가 카메라에서 멀어질수록 시차가 점차 작아져 서브픽셀 대응점 오차(Subpixel Correspondence Error)에 대한 깊이 민감도가 증가한다. 높은 영상 해상도, 긴 초점거리, 넓은 베이스라인 및 정밀한 정합(Matching)을 이용하면 유효 측정 거리를 확장할 수 있지만 각각 시야각, 패키징, 연산 부하, 교정 안정성 또는 비용에 영향을 준다.
+
+따라서 베이스라인 선택(Baseline Selection)은 스테레오 및 능동형 스테레오(Active Stereo) 아키텍처의 핵심 절충 요소이다. 짧은 베이스라인은 소형 패키징, 높은 시야 중첩(Field-of-View Overlap), 우수한 근거리 동작에 유리하지만 먼 물체에서는 매우 작은 시차가 발생한다. 긴 베이스라인은 장거리 삼각측량(Triangulation) 민감도를 향상시키지만 모듈 크기, 시점 차이, 가림(Occlusion), 교정 민감도를 증가시킨다. 하나의 베이스라인으로 매우 짧은 거리와 매우 긴 거리 모두에서 최적의 성능을 제공하기는 어렵다.
+
+시야각(Field of View)은 근거리 커버리지와 장거리 관측 사이에 또 다른 중요한 관계를 형성한다. 광각 광학계(Wide-Angle Optics)는 넓은 주변 영역을 제공하므로 로봇 주변의 근거리 장애물을 검출하는 데 유용하지만, 사용 가능한 영상 해상도를 넓은 각도 범위에 분산시킨다. 좁은 시야각의 광학계는 더 작은 각도 영역에 픽셀을 집중시켜 원거리 물체의 세부정보를 향상시킬 수 있다. 따라서 센서 아키텍처에서는 목표 거리에서 필요한 공간 해상도와 각도 커버리지 사이의 균형이 필요하다.
+
+비행시간(Time-of-Flight, ToF) 센싱은 양안 시차 대신 능동적인 광 송신 및 검출을 기반으로 깊이를 측정하므로 다른 형태의 거리 절충 특성을 가진다. 단거리에서는 강한 반사 신호를 이용해 조밀하고 안정적인 깊이를 얻을 수 있지만 반사율이 높은 근거리 물체에서는 포화가 발생할 수 있다. 장거리에서는 광 에너지가 확산되고 반사 신호 강도가 감소하므로 대상체 반사율, 주변 조명, 수신기 잡음, 변조 특성(Modulation Characteristics), 송신기 출력에 대한 민감도가 증가한다.
+
+구조광 시스템(Structured-Light System)은 제어된 단거리 또는 중거리 작업 공간에서 상세한 깊이 정보가 필요한 경우 일반적으로 유리하다. 투사 패턴(Projected Pattern)은 자연적인 텍스처가 부족한 표면에서도 강한 기하학적 특징을 제공하여 조작, 물체 측정, 도킹 및 실내 상호작용을 지원할 수 있다. 그러나 거리가 증가하면 투사 패턴의 밀도와 대비가 감소하며 주변 조명과 표면 특성의 영향으로 패턴 검출이 점차 어려워진다.
+
+능동형 스테레오(Active Stereo)는 인공적인 적외선 특징을 투사함으로써 텍스처가 부족한 환경에서 순수한 수동형 스테레오(Passive Stereo)보다 유효 동작 범위를 확장할 수 있다. 단거리와 중거리에서는 이러한 특징이 대응점 검출 신뢰성을 크게 향상시킨다. 그러나 거리가 증가하면 투사된 텍스처가 약해지고 구분하기 어려워져 카메라가 점차 자연적으로 존재하는 장면의 텍스처에 의존하게 된다. 따라서 거리가 증가함에 따라 능동 보조 스테레오(Active-Assisted Stereo)에서 사실상 수동형 스테레오로 점진적으로 전환될 수 있다.
+
+능동형 센싱(Active Sensing)의 측정 거리를 증가시키기 위해 광 출력(Optical Power)을 무한정 높일 수는 없다. 높은 광원 출력은 전력 소비와 열 부하(Thermal Load)를 증가시키고 눈 안전(Eye Safety) 문제를 발생시킬 수 있으며, 근거리에서는 강한 반사와 포화를 일으킬 가능성이 있다. 조명 광학계(Illumination Optics)를 이용해 원거리 대상에 에너지를 집중할 수 있지만 투사 영역이 좁아지면서 커버리지가 감소한다. 따라서 요구 측정 거리는 시야각, 광원 듀티 사이클(Emitter Duty Cycle), 열 용량 및 안전 제약과 함께 고려해야 한다.
+
+주변광(Ambient Light)은 실험실에서의 측정 거리와 실제 운용 거리(Practical Operating Range) 사이에 중요한 차이를 발생시킨다. 실내 깊이 카메라는 제어된 조명과 비교적 낮은 적외선 배경 신호의 이점을 얻을 수 있지만, 실외의 태양광은 능동형 적외선 시스템의 신호대배경비(Signal-to-Background Ratio)를 크게 감소시킬 수 있다. 따라서 특정 최대 거리가 명시된 센서라도 실내, 실외, 야간 또는 직사광선 환경에 따라 실제 사용 가능한 깊이 품질이 크게 달라질 수 있다.
+
+표면 반사율(Surface Reflectivity) 역시 동일한 장면 내부에서도 물체별 유효 측정 거리를 변화시킨다. 밝은 확산 표면(Bright Diffuse Surface)은 비교적 먼 거리에서도 강한 반사 신호를 제공할 수 있지만 어두운 재료는 훨씬 짧은 거리에서부터 측정 신뢰도가 감소할 수 있다. 반사성, 투명성 및 반투명 물체는 공칭 측정 거리와 관계없이 잘못된 깊이값을 생성할 수 있다. 따라서 실제 거리 사양은 단순한 하나의 최대 거리보다 대표적인 재료에 대한 신뢰도와 정확도를 함께 나타내는 것이 바람직하다.
+
+깊이 해상도(Depth Resolution)와 깊이 정확도(Depth Accuracy)는 영상 해상도(Image Resolution)와 혼동해서는 안 된다. 깊이 카메라가 많은 픽셀을 출력하더라도 장거리에서 상당한 거리 불확실성을 가질 수 있다. 시스템 수준에서 의미 있는 지표는 각각의 깊이 샘플이 로봇 작업에 충분한 공간적 정확도와 거리 정확도를 제공하는지 여부이다. 조작 작업은 밀리미터 수준의 국부 기하정보를 요구할 수 있지만 내비게이션에서는 장애물과 자유공간(Free Space)을 안정적으로 구분할 수 있다면 더 큰 깊이 불확실성을 허용할 수도 있다.
+
+프레임률(Frame Rate)과 지연시간(Latency) 역시 거리 절충에 포함된다. 특히 약한 장거리 반사 신호에서는 노출시간(Exposure Time)을 늘리거나 여러 측정값을 누적하여 신호 품질을 향상시킬 수 있지만 프레임률이 감소하거나 지연시간이 증가할 수 있다. 이동하는 로봇에서는 센서의 측정 거리를 로봇 속도와 독립적으로 평가할 수 없다. 추가적인 센싱 거리는 측정 결과가 인지, 계획 및 제어 시스템이 안전하게 반응할 수 있을 만큼 충분히 빠르게 제공될 때에만 의미가 있다.
+
+넓은 거리 범위에서 높은 해상도를 유지하려는 아키텍처에서는 연산 요구량(Processing Requirement)도 증가할 수 있다. 고해상도 스테레오 정합, 다중 주파수 ToF(Multi-Frequency ToF) 처리, 신뢰도 추정, 시간 필터링(Temporal Filtering), 신경망 기반 깊이 보정(Neural Depth Refinement)은 상당한 연산 자원을 소비할 수 있다. 해상도를 낮추면 전력과 지연시간을 줄일 수 있지만 원거리 세부정보가 손실된다. 따라서 실제 센싱 범위(Sensing Envelope)를 정의할 때 엣지 연산(Edge Compute) 성능도 포함해야 한다.
+
+전력 예산(Power Budgeting)은 시스템 수준에서 직접적인 제약을 형성한다. 장거리 능동 조명은 더 높은 광 출력을 요구할 수 있으며, 고해상도 센서와 복잡한 처리 알고리즘은 전기적 소비 전력을 증가시킨다. 이러한 부하는 추가적인 열을 발생시켜 교정 상태와 센서 잡음에도 영향을 줄 수 있다. 배터리 기반 AMR, 매니퓰레이터(Manipulator), 사족보행 로봇(Quadruped), 휴머노이드(Humanoid), UAV에서는 추가 센싱 거리가 에너지 소비, 열 설계, 운용시간(Runtime), 질량 및 패키징에 미치는 영향을 함께 평가해야 한다.
+
+센서 배치(Sensor Placement)를 이용하면 단일 깊이 카메라의 일부 한계를 보완할 수 있다. 근거리 카메라는 섀시(Chassis), 매니퓰레이터 또는 도킹 인터페이스 주변의 사각지대(Blind Zone)를 담당하도록 배치할 수 있으며, 전방 센서는 더 긴 장애물 검출 거리를 우선하도록 구성할 수 있다. 중첩되는 시야각은 센싱 영역 사이의 자연스러운 전환과 상호 검증(Cross-Validation)을 지원한다. 이러한 분산형 아키텍처(Distributed Architecture)는 하나의 광학 구성으로 모든 거리 요구사항을 만족시키는 것보다 효과적일 수 있다.
+
+다중 센서 융합(Multi-Sensor Fusion)은 단거리와 장거리 사이의 충돌을 해결하는 또 다른 방법이다. 깊이 카메라는 조밀한 근거리 기하정보를 제공하고 LiDAR는 더 먼 거리까지 신뢰성 높은 기하학적 인지를 확장할 수 있다. 레이더(Radar)는 광학 센서가 어려움을 겪는 환경에서도 장거리 검출과 속도 정보를 제공할 수 있으며 RGB 카메라는 의미론적 정보(Semantic Information)를 제공한다. 따라서 적절한 해결책은 모든 조건에서 우수한 하나의 깊이 기술을 선택하는 것이 아니라 상호보완적 센싱(Complementary Sensing)을 구성하는 경우가 많다.
+
+센싱 영역 사이의 전환(Transition)은 하나의 아키텍처 문제로 다루어야 한다. 근거리, 중거리 및 원거리 관측은 서로 다른 해상도, 불확실성, 갱신 주기(Update Rate), 센서 모달리티(Sensor Modality)를 가질 수 있다. 물체가 서로 다른 센싱 영역 사이를 이동할 때 신뢰도가 갑작스럽게 변화하지 않도록 인지 소프트웨어가 이러한 특성을 이해해야 한다. 전체 운용 범위에서 일관된 공간 표현을 구성하려면 교정, 좌표 변환, 타임스탬프, 불확실성 모델(Uncertainty Model), 센서 융합 로직이 필요하다.
+
+실내 자율이동로봇(Indoor AMR)의 경우 이동 속도가 비교적 낮고 사람, 가구, 출입문, 엘리베이터, 도킹 스테이션과의 상호작용이 근거리에서 발생하므로 단거리 및 중거리의 조밀한 깊이 정보가 중요할 수 있다. 실외 자율이동로봇(Outdoor AMR)은 더 높은 이동 속도와 넓은 개방 공간으로 인해 훨씬 긴 인지 거리를 요구할 수 있다. 매니퓰레이터는 정밀한 근거리 기하정보를 강조하는 반면 UAV는 고도와 비행 속도에 따라 하방, 전방 및 주변 센싱의 서로 다른 조합을 필요로 할 수 있다.
+
+제공된 아키텍처에서 단거리·장거리 절충(Short Range Long Range Tradeoff)은 ToF 센서 아키텍처(ToF Sensor Architecture), 구조광 시스템(Structured Light System), 능동형 스테레오 설계(Active Stereo Design) 다음에 배치되고 깊이 카메라 전력 예산(Depth Camera Power Budget) 바로 앞에 위치한다. 이러한 순서는 중요한 엔지니어링 진행 과정을 반영한다. 먼저 사용 가능한 깊이 센싱 원리를 이해하고, 다음으로 동작 거리에 따라 각각의 성능이 어떻게 변화하는지를 결정한 후, 최종적으로 선택된 센싱 범위를 전체 로봇 플랫폼의 전기 및 전력 요구사항으로 변환한다.
+
+결과적으로 견고한 깊이 카메라 아키텍처(Depth-Camera Architecture)는 최대 측정 거리 자체를 독립적인 목표로 추구하지 않는다. 대신 특정 로봇 기능에 필요한 정확도, 밀도, 시간 응답성 및 신뢰성을 유지할 수 있는 실제 측정 거리를 정의한다. 단거리 정밀도, 장거리 인지, 시야각, 베이스라인, 조명, 주변광 내성, 처리 지연시간, 전력, 열 거동 및 센서 융합을 함께 최적화함으로써 로보틱스(Robotics)와 피지컬 AI(Physical AI) 시스템에 적합한 실질적인 인지 범위(Practical Perception Envelope)를 구축해야 한다.
+
+## 03.05. Depth Camera Power Budget
+
+![](images/image5.png){width="7.268055555555556in" height="7.268055555555556in"}
+
+깊이 카메라 전력 예산(Depth Camera Power Budget)은 신뢰할 수 있는 3차원 측정값을 생성하는 데 필요한 센싱(Sensing), 조명(Illumination), 처리(Processing), 통신(Communication) 및 지원 회로(Supporting Circuit)의 전기 에너지를 어떻게 배분할 것인지를 정의한다. 수동형 카메라(Passive Camera)와 달리 많은 깊이 카메라는 능동형 광학 방출기(Active Optical Emitter)와 상당한 수준의 실시간 처리 하드웨어를 포함한다. 따라서 전력 설계에서는 평균 소비전력, 과도 전력 요구, 피크 전류(Peak Current), 변환 손실, 열 방출, 동작 모드 및 전원 품질이 측정 정확도에 미치는 영향을 함께 고려해야 한다.
+
+깊이 카메라의 아키텍처는 전력 소비 특성(Power Profile)을 결정한다. 비행시간(Time-of-Flight, ToF) 시스템에는 조명 광원, 광학 드라이버(Optical Driver), ToF 센서, 타이밍 회로, 깊이 처리 로직, 메모리 및 통신 인터페이스가 필요하다. 구조광(Structured Light) 카메라는 패턴 투사와 영상 획득 기능을 추가하며, 능동형 스테레오(Active Stereo)는 일반적으로 두 개의 이미지 센서와 적외선 프로젝터 및 스테레오 처리 하드웨어를 결합한다. 따라서 유사한 깊이 해상도와 동작 거리를 제공하더라도 각 아키텍처의 전력 배분 방식은 서로 다르다.
+
+전력 예산 수립의 첫 번째 단계는 모든 전기적 부하(Electrical Load)와 각각의 동작 상태를 식별하는 것이다. 일반적인 부하에는 이미지 센서, 레이저 또는 수직공진 표면발광 레이저(VCSEL), LED, 조명 드라이버, 프로세서, ASIC, FPGA, 메모리 장치, 발진기(Oscillator), 인터페이스 송수신기(Interface Transceiver), 레귤레이터(Regulator), 온도 센서 및 보조 제어 회로가 포함된다. 각 부품은 하나의 공칭 전력값만 사용하는 것이 아니라 기동, 유휴, 정상 획득, 최대 조명, 고속 처리, 통신, 교정 및 고장 상태별로 특성을 분석해야 한다.
+
+능동 조명(Active Illumination)은 깊이 카메라 모듈에서 가장 크고 동적으로 변화하는 부하 중 하나가 될 수 있다. ToF, 구조광 및 능동형 스테레오 시스템은 연속 또는 제어된 듀티 사이클(Duty Cycle)로 동작하는 적외선 LED, 레이저 다이오드 또는 VCSEL 배열을 사용할 수 있다. 이들의 순간 전력(Instantaneous Power)은 평균 전력보다 상당히 클 수 있다. 따라서 전원 네트워크는 과도한 전압 강하 없이 피크 전류를 공급하면서 광 출력, 측정 거리, 열, 효율 및 눈 안전(Eye Safety) 요구조건을 만족해야 한다.
+
+듀티 사이클 제어(Duty-Cycle Control)는 센싱 성능과 전력 소비 사이의 균형을 조정하는 중요한 방법이다. 카메라 노출 또는 특정 측정 구간에서만 광원을 동작시키면 충분한 순간 광 출력을 유지하면서 평균 에너지 소비와 발열을 줄일 수 있다. 그러나 적극적인 듀티 사이클 제어를 위해서는 조명, 노출, 타이밍 회로 및 처리 과정 사이의 정확한 동기화(Synchronization)가 필요하다. 따라서 전력 예산에서는 광원의 피크 전력과 시간 평균 조명 전력(Time-Averaged Illumination Power)을 구분해야 한다.
+
+이미지 센서(Image Sensor)는 픽셀 동작, 아날로그 회로, ADC 변환, 클록 생성 및 데이터 전송과 관련된 비교적 연속적인 전기 부하를 발생시킨다. 소비전력은 해상도, 프레임률(Frame Rate), 노출 아키텍처, 인터페이스 속도 및 활성화된 센서 기능에 따라 달라진다. 스테레오 시스템에서는 두 개의 동기화된 센서를 고려해야 하며 일부 깊이 모듈은 RGB 또는 보조 적외선 스트림까지 제공한다. 따라서 해상도나 프레임률의 증가는 센서뿐 아니라 후단 처리 및 인터페이스의 전력 소비도 증가시킬 수 있다.
+
+깊이 처리(Depth Processing)는 센싱 하드웨어 자체만큼 많은 전력을 소비할 수 있다. ToF 위상 처리, 구조광 대응점 계산, 스테레오 시차 추정(Disparity Estimation), 필터링, 신뢰도 계산 및 깊이 변환에는 상당한 연산 처리량이 필요하다. 이러한 처리는 전용 ASIC, FPGA, 임베디드 CPU, GPU 또는 외부 엣지 컴퓨터(Edge Computer)에서 수행할 수 있다. 아키텍처 경계에 따라 상당한 전력 요구량이 숨겨질 수 있으므로 카메라의 소비전력 사양에 깊이 연산이 포함되는지 또는 원시 센서 획득만 포함되는지를 명확하게 정의해야 한다.
+
+메모리와 데이터 이동(Data Movement) 역시 과소평가되기 쉬운 전력 소비 요소이다. 고해상도 깊이 처리 파이프라인에서는 영상 프레임, 시차 데이터, 신뢰도 맵(Confidence Map), 교정 테이블 및 중간 버퍼를 센서, 프로세서, 메모리 사이에서 반복적으로 전송할 수 있다. 동적 메모리 접근과 고속 직렬 인터페이스는 산술 연산 자체가 효율적이더라도 전력을 소비한다. 따라서 불필요한 데이터 복사를 줄이고 적절한 데이터 형식을 선택하며 센서 가까이에서 처리하는 것은 전체 에너지 효율을 향상시키는 데 도움이 된다.
+
+통신 인터페이스(Communication Interface) 역시 전력 예산에 포함해야 한다. USB, 이더넷(Ethernet), MIPI, GMSL 또는 기타 고속 링크에는 물리 계층 회로(Physical-Layer Circuitry), 클록, 버퍼 및 경우에 따라 추가적인 브리지 장치(Bridge Device)가 필요하다. 소비전력은 데이터 전송률과 링크 구성에 따라 달라진다. 깊이, 적외선, RGB, 신뢰도 및 메타데이터를 동시에 전송하는 카메라는 깊이 맵만 전송하는 카메라보다 훨씬 높은 인터페이스 대역폭을 요구할 수 있으며 카메라와 호스트 양쪽의 소비전력을 증가시킨다.
+
+전압 변환 손실(Voltage Conversion Loss)은 전원에서 공급되는 입력 전력과 개별 회로가 실제로 소비하는 전력 사이에 차이를 발생시킨다. 로봇은 12V, 24V 또는 다른 시스템 전압 레일(System Rail)을 제공할 수 있지만 깊이 모듈은 로직, 센서, 메모리, 아날로그 회로 및 광원에 여러 개의 낮은 전압 레일을 요구할 수 있다. 벅 컨버터(Buck Converter), 저강하 레귤레이터(Low-Dropout Regulator, LDO), 로드 스위치(Load Switch), 필터링 네트워크에는 손실이 존재하므로 입력 전력 예산에서는 후단 부품의 공칭 소비전력을 단순히 합산하는 것이 아니라 레귤레이터 효율까지 포함해야 한다.
+
+전원 레일 분리(Power-Rail Partitioning)는 깊이 카메라 내부 부하가 서로 다른 잡음 특성을 가지기 때문에 중요하다. 고전류 조명 드라이버와 디지털 프로세서는 스위칭 잡음을 발생시킬 수 있는 반면 아날로그 센서 회로, 타이밍 기준 및 클록 네트워크는 전원 잡음에 민감할 수 있다. 별도의 전압 조정이나 필터링을 적용하면 광원 펄스와 프로세서 동작이 깊이 측정을 저하시키는 것을 방지할 수 있다. 따라서 전원 무결성(Power Integrity)은 단순한 신뢰성 문제가 아니라 영상 잡음, 타이밍 오차 및 불안정한 깊이 출력과 직접적으로 연결된다.
+
+과도 상태 분석(Transient Analysis)은 능동형 깊이 카메라에서 특히 중요하다. 조명 펄스, 프로세서 작업량 변화, 인터페이스 버스트(Interface Burst), 기동 이벤트는 평균 전력 사양만으로는 확인하기 어려운 급격한 전류 변화를 발생시킬 수 있다. 로컬 벌크 커패시턴스(Local Bulk Capacitance)와 고주파 디커플링(High-Frequency Decoupling)은 레귤레이터가 응답하는 동안 이러한 이벤트에 필요한 에너지를 공급해야 한다. 피크 부하에서 카메라에 실제 공급되는 최소 전압을 평가할 때 PCB 임피던스, 커넥터 저항, 케이블 전압 강하 및 전원 임피던스도 함께 고려해야 한다.
+
+기동 전력(Startup Power)은 여러 내부 전압 레일이 순차적으로 활성화되고 대용량 커패시터가 상당한 돌입전류(Inrush Current)를 요구할 수 있으므로 별도로 고려해야 한다. 로봇에 장착된 여러 깊이 카메라가 동시에 기동하면 전체 돌입전류가 공유 DC/DC 컨버터 또는 보호 장치의 용량을 일시적으로 초과할 수 있다. 제어된 전원 시퀀싱(Power Sequencing), 소프트 스타트(Soft Start), 로드 스위치, 시차를 둔 초기화(Staggered Initialization), 적절한 퓨즈 또는 전자식 보호 특성을 적용하면 기동 과정이 로봇 전기 시스템을 불안정하게 만드는 것을 방지할 수 있다.
+
+열 설계(Thermal Design)는 소비된 전기 에너지의 대부분이 결국 카메라 모듈 내부 또는 주변에서 열로 변환되므로 전력 예산과 직접 연결된다. 광원, 프로세서, 레귤레이터 및 고속 인터페이스는 집중된 열원을 형성할 수 있다. 온도 상승은 이미지 센서 잡음, 광원 효율, 광학 파장, 교정 파라미터 및 기계적 정렬을 변화시킬 수 있다. 따라서 허용 가능한 전력 예산은 인클로저 열저항(Enclosure Thermal Resistance), 공기 흐름, 전도 경로 및 주변 온도와 함께 결정해야 한다.
+
+최대 센싱 성능이 필요하지 않은 경우 동작 모드(Operating Mode)를 변경하여 에너지 소비를 크게 줄일 수 있다. 깊이 카메라는 대기(Standby), 저프레임률(Reduced-Frame-Rate), 저해상도(Low-Resolution), 수동 전용(Passive-Only), 저조명(Reduced-Illumination), 트리거 획득(Triggered Acquisition), 최대 성능(Full-Performance) 모드를 지원할 수 있다. 정지한 로봇에서는 센싱 활동을 줄이고 움직임이나 근접 이벤트가 발생하면 최대 성능으로 복귀시킬 수 있다. 이러한 상태 기반 전력 관리(State-Based Power Management)는 임무 중 인지 요구가 크게 변화하는 배터리 기반 로봇에서 특히 유용하다.
+
+전력 예산에서는 센싱 거리(Sensing Range)와 에너지 소비 사이의 관계도 고려해야 한다. 능동형 광학 센싱의 측정 거리를 확장하려면 일반적으로 더 강한 조명, 긴 적분 시간(Integration Time), 복잡한 처리 또는 고해상도 영상이 필요하며, 각각 소비전력이나 지연시간을 증가시킬 수 있다. 따라서 앞에서 다룬 단거리·장거리 절충(Short-Range versus Long-Range Tradeoff)은 전기적 요구조건으로 직접 연결된다. 최대 측정 거리는 에너지와 열 비용을 무시한 채 추구하기보다 로봇의 실제 운용 요구를 기준으로 결정해야 한다.
+
+여러 대의 깊이 카메라는 플랫폼 수준에서 상당한 전력 부하를 형성할 수 있다. AMR은 사각지대를 제거하기 위해 전방, 후방, 측면, 상부 또는 도킹용 카메라를 사용할 수 있으며 휴머노이드(Humanoid)나 모바일 매니퓰레이터(Mobile Manipulator)는 머리, 몸통, 팔 또는 베이스에 여러 카메라를 분산 배치할 수 있다. 전체 인지 시스템의 전력 요구량을 계산할 때는 카메라의 공칭 소비전력뿐 아니라 동시 피크 전류, 기동 동작, 통신 부하 및 열적 영향을 모두 합산해야 한다.
+
+로봇 수준 전력 예산(Robot-Level Power Budget)에는 부품 편차, 온도, 노화(Aging), 전원 허용오차, 향후 소프트웨어 동작 모드 및 일시적인 최대 부하를 고려한 여유도(Margin)가 포함되어야 한다. 전력분배장치(Power Distribution Unit, PDU)나 DC/DC 컨버터를 계산된 공칭 소비전력에 정확히 맞추어 설계하면 실제 운용 환경에서 충분한 강건성을 확보하기 어렵다. 반면 과도한 용량 증가는 컨버터의 질량, 부피, 비용 및 저부하 효율을 악화시키므로 엔지니어링 여유도를 체계적으로 설정해야 한다.
+
+모니터링(Monitoring)은 시스템 통합 이후 초기 전력 예산의 가정을 검증할 수 있는 방법을 제공한다. 카메라 전원 레일이나 개별 서브시스템 전원 레일에서 전류와 전압을 측정하면 기동, 유휴, 내비게이션, 조작, 최대 조명 및 고연산 상태에서 실제 소비전력을 확인할 수 있다. 온도 텔레메트리(Temperature Telemetry)를 함께 이용하면 전기 부하와 열 거동 사이의 관계를 분석할 수 있다. 실제 측정 데이터를 초기 전력 모델과 비교하면 현장 신뢰성이나 운용시간 문제로 발전하기 전에 차이를 식별할 수 있다.
+
+전원 고장(Power Fault)은 진단 및 보호 아키텍처(Diagnostic and Protection Architecture)와 통합되어야 한다. 저전압(Undervoltage), 과전류(Overcurrent), 과도한 온도, 광원 드라이버 고장, 통신 손실 또는 불안정한 전원 레일은 카메라가 계속 프레임을 출력하더라도 깊이 정보를 무효화할 수 있다. 따라서 견고한 시스템에서는 전기적 건전성(Electrical Health)을 센서 신뢰도 및 진단 상태와 연결해야 한다. 상위 인지 소프트웨어는 센서가 검증된 전기적 조건을 벗어난 상태에서 생성한 측정값과 신뢰할 수 있는 깊이 데이터를 구분할 수 있어야 한다.
+
+배터리 기반 로보틱스(Battery-Powered Robotics)에서는 카메라의 소비전력을 최종적으로 임무 에너지(Mission Energy)로 변환하여 평가해야 한다. 비교적 작은 연속 부하라도 여러 센서가 장시간 동작하면 상당한 에너지를 소비하게 된다. 따라서 중요한 값은 단순한 와트(Watt)가 아니라 예상 듀티 사이클 전체에서 소비되는 와트시(Watt-Hour, Wh)이다. 센서 에너지는 연산, 통신, 액추에이터(Actuator), 냉각 및 보조 시스템과 함께 평가하여 인지 성능과 요구 운용시간 사이의 균형을 결정해야 한다.
+
+제공된 아키텍처에서 깊이 카메라 전력 예산(Depth Camera Power Budget)은 ToF 센서 아키텍처(ToF Sensor Architecture), 구조광 시스템(Structured Light System), 능동형 스테레오 설계(Active Stereo Design), 단거리·장거리 절충(Short Range Long Range Tradeoff) 다음에 배치되어 있다. 이러한 순서는 센싱 원리, 요구 동작 범위 및 전기적 구현 사이의 시스템 엔지니어링(System Engineering) 관계를 반영한다. 깊이 기술과 실제 측정 범위가 결정되면 조명, 연산, 인터페이스, 열 및 과도 상태 요구조건을 완전한 전력 아키텍처로 변환할 수 있다.
+
+결과적으로 견고한 깊이 카메라 전력 예산(Depth Camera Power Budget)은 단순히 각 부품의 소비전력을 합산하는 작업을 넘어선다. 동작 상태, 피크 전류, 듀티 사이클, 변환 효율, 기동 특성, 통신, 연산, 전원 무결성, 열 방출, 진단 범위(Diagnostic Coverage), 임무 에너지를 종합적으로 모델링해야 한다. 로보틱스(Robotics)와 피지컬 AI(Physical AI) 플랫폼의 목표는 안정적인 3차원 인지에 충분한 전기적 자원을 제공하면서 불필요한 에너지 소비, 열 스트레스(Thermal Stress), 전기 잡음 및 전체 시스템 운용시간에 대한 영향을 최소화하는 것이다.
